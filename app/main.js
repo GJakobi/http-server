@@ -9,7 +9,7 @@ const server = net.createServer((socket) => {
   socket.on("data", (data) => {
     const { method, path, headers } = parseRequestData(data.toString());
 
-    const response = formatResponse({path});
+    const response = formatResponse({ path, headers });
     socket.write(response);
     socket.end();
   });
@@ -39,23 +39,46 @@ const parseRequestData = (request) => {
   return { method, path, headers: headersObject };
 };
 
-const formatResponse = ({path}) => {
-  let response = "HTTP/1.1";
-
-  if(path === '/') {
-    return response + ' 200 OK\r\n\r\n';
-  } else if (path.split("/")[1] !== 'echo'){
-    return response + ' 404 Not Found\r\n\r\n';
+const formatResponse = ({ path, headers }) => {
+  if (path === "/") {
+    return getHTTPResponse("200 OK");
+  } else if (path.split("/")[1] === "echo") {
+    const randomString = path.split("/").slice(2).join("/");
+    return getHTTPResponse(
+      "200 OK",
+      "text/plain",
+      randomString.length,
+      randomString
+    );
+  } else if (path.split("/")[1] === "user-agent") {
+    return getHTTPResponse(
+      "200 OK",
+      "text/plain",
+      headers["User-Agent"].length,
+      headers["User-Agent"]
+    );
   }
 
+  return getHTTPResponse("404 Not Found");
+};
 
-  response = "HTTP/1.1 200 OK \r\nContent-Type: text/plain\r\n";
+/**
+ * Receives the status, content type, content length and body and returns a string with the HTTP response
+ */
+const getHTTPResponse = (status, contentType, contentLength, body = "") => {
+  let response = "HTTP/1.1";
 
-  const randomString = path.split("/").slice(2).join("/");
+  response += ` ${status}\r\n`;
 
+  if (contentType) {
+    response += `Content-Type: ${contentType}\r\n`;
+  }
 
-  response += `Content-Length: ${randomString.length}\r\n\r\n${randomString}`;
+  if (contentLength) {
+    response += `Content-Length: ${contentLength}\r\n`;
+  }
 
+  response += `\r\n${body}`;
 
   return response;
-}
+};
