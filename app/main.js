@@ -10,11 +10,11 @@ const server = net.createServer((socket) => {
   });
 
   socket.on("data", (data) => {
-    const { method, path, headers } = parseRequestData(data.toString());
+    const { method, path, headers, body } = parseRequestData(data.toString());
 
     console.log("Request received");
 
-    const response = formatResponse({ path, headers });
+    const response = formatResponse({ path, headers, method, body });
     socket.write(response);
     socket.end();
   });
@@ -33,7 +33,8 @@ server.listen(4221, "localhost", () => {
 const parseRequestData = (request) => {
   const [requestLine, ...headers] = request.split("\r\n");
 
-  // remove the last two items of the headers array because they are empty
+  const body = headers[headers.length - 1];
+
   headers.length = headers.length - 2;
 
   const [method, path, HTTPVersion] = requestLine.split(" ");
@@ -43,10 +44,10 @@ const parseRequestData = (request) => {
     return { ...acc, [key]: value };
   }, {});
 
-  return { method, path, headers: headersObject };
+  return { method, path, headers: headersObject, body };
 };
 
-const formatResponse = ({ path, headers }) => {
+const formatResponse = ({ path, headers, method, body }) => {
   if (path === "/") {
     return getHTTPResponse("200 OK");
   }
@@ -70,7 +71,7 @@ const formatResponse = ({ path, headers }) => {
     );
   }
 
-  if (path.split("/")[1] === "files") {
+  if (path.split("/")[1] === "files" && method === "GET") {
     const filename = path.split("/")[2];
 
     const directory = process.argv[3];
@@ -89,6 +90,16 @@ const formatResponse = ({ path, headers }) => {
       data.length,
       data
     );
+  }
+
+  if (path.split("/")[1] === "files" && method === "POST") {
+    const filename = path.split("/")[2];
+
+    const directory = process.argv[3];
+
+    fs.writeFileSync(`${directory}/${filename}`, body);
+
+    return getHTTPResponse("201 Created");
   }
 
   return getHTTPResponse("404 Not Found");
