@@ -6,6 +6,11 @@ const server = net.createServer((socket) => {
     socket.end();
     server.close();
   });
+
+  socket.on("data", (data) => {
+    console.log(data.toString());
+    socket.write("Hello from server");
+  });
 });
 
 server.listen(4221, "localhost");
