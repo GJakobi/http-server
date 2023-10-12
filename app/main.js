@@ -1,4 +1,5 @@
 const net = require("net");
+const fs = require("fs");
 
 const server = net.createServer((socket) => {
   console.log("Client connected");
@@ -48,7 +49,9 @@ const parseRequestData = (request) => {
 const formatResponse = ({ path, headers }) => {
   if (path === "/") {
     return getHTTPResponse("200 OK");
-  } else if (path.split("/")[1] === "echo") {
+  }
+
+  if (path.split("/")[1] === "echo") {
     const randomString = path.split("/").slice(2).join("/");
     return getHTTPResponse(
       "200 OK",
@@ -56,12 +59,35 @@ const formatResponse = ({ path, headers }) => {
       randomString.length,
       randomString
     );
-  } else if (path.split("/")[1] === "user-agent") {
+  }
+
+  if (path.split("/")[1] === "user-agent") {
     return getHTTPResponse(
       "200 OK",
       "text/plain",
       headers["User-Agent"].length,
       headers["User-Agent"]
+    );
+  }
+
+  if (path.split("/")[1] === "files") {
+    const filename = path.split("/")[2];
+
+    const directory = process.argv[3];
+
+    const files = fs.readdirSync(directory);
+
+    if (!files.includes(filename)) {
+      return getHTTPResponse("404 Not Found");
+    }
+
+    const data = fs.readFileSync(`${directory}/${filename}`, "utf8");
+
+    return getHTTPResponse(
+      "200 OK",
+      "application/octet-stream",
+      data.length,
+      data
     );
   }
 
