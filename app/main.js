@@ -40,11 +40,22 @@ const parseRequestData = (request) => {
 };
 
 const formatResponse = ({path}) => {
-  const response = "HTTP/1.1";
+  let response = "HTTP/1.1";
 
   if(path === '/') {
     return response + ' 200 OK\r\n\r\n';
-  } else {
+  } else if (path.split("/")[1] !== 'echo'){
     return response + ' 404 Not Found\r\n\r\n';
   }
+
+
+  response = "HTTP/1.1 200 OK \r\nContent-Type: text/plain\r\n";
+
+  const randomString = path.split("/").slice(2).join("/");
+
+
+  response += `Content-Length: ${randomString.length}\r\n\r\n${randomString}`;
+
+
+  return response;
 }
