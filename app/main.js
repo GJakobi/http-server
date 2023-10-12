@@ -1,13 +1,17 @@
 const net = require("net");
 
 const server = net.createServer((socket) => {
+  console.log("Client connected");
+
   socket.on("close", () => {
     socket.end();
-    server.close();
+    console.log("Client disconnected");
   });
 
   socket.on("data", (data) => {
     const { method, path, headers } = parseRequestData(data.toString());
+
+    console.log("Request received");
 
     const response = formatResponse({ path, headers });
     socket.write(response);
@@ -15,7 +19,9 @@ const server = net.createServer((socket) => {
   });
 });
 
-server.listen(4221, "localhost");
+server.listen(4221, "localhost", () => {
+  console.log("Server listening on port 4221");
+});
 
 /**
  * Receives content separated by \r\n\r\n and returns an object with the method, path and headers
